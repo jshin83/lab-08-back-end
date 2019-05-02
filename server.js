@@ -5,10 +5,12 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const superagent = require('superagent');
+const pg = require('pg');
 
 // Variable for holding current location
 // use environment variable, or, if it's undefined, use 3000 by default
 const PORT = process.env.PORT || 3000;
+const client = new pg.Client(process.env.DATABASE_URL);
 
 //static files
 app.use(cors());
@@ -37,19 +39,10 @@ const Event = function(res) {
 
 //routes
 app.get('/location', (request, response) => {
-  try {
-    // queryData is what the user typed into the box in the FE and hit "explore"
-    const queryData = request.query.data;
 
-    let geocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${queryData}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
-    superagent.get(geocodeURL).end( (err, googleMapsApiResponse) => {
-      const location = new Location(queryData, googleMapsApiResponse.body);
-
-      response.send(location);
-    });
-  } catch( error ) {
-    errorHandling(error, 500, response);
-  }
+  // queryData is what the user typed into the box in the FE and hit "explore"
+  const queryData = request.query.data;
+  searchToLatLong(queryData).then(location => response.send(location)).catch(error => handleError(error, response));
 });
 
 //route for weather daily data
@@ -79,6 +72,36 @@ app.get('/events', (request, response) => {
   }
 });
 
+function searchToLatLong(query) {
+  // check if query in database
+  let sqlStatement = 'SELECT * FROM location WHERE search_query = $1;';
+  let values = [ query ];
+  return client.query(sqlStatement, values)
+    .then( (data) => {
+      console.log('we made it');
+      console.log(data);
+      // if data in db, use data from db and send result
+      if(data.rowCount > 0) {
+        // use data from db and send result
+        console.log('we are sending data from the database');
+        return data.rows[0];
+      } else {
+        // otherwise, grab data from gmaps, save to db, and send result
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${process.env.GEOCODE_API_KEY}`;
+
+        return superagent.get(url)
+          .then(res => {
+            let newLocation = new Location(query, res);
+            let insertStatement = 'INSERT INTO location ( search_query, formatted_query, latitude, longitude ) VALUES ( $1, $2, $3, $4 );';
+            let insertValues = [ newLocation.search_query, newLocation.formatted_query, newLocation.latitude, newLocation.longitude ];
+            client.query(insertStatement, insertValues);
+            return newLocation;
+          })
+          .catch(error => handleError(error));
+      }
+    });
+}
+
 // Function for getting all the daily weather
 function getDailyWeather(weatherData){
   let weatherArr = weatherData.daily.data;
@@ -97,6 +120,12 @@ function processEvents(eventsData) {
   return eventsData.map( event => {
     return new Event(event);
   });
+}
+
+//handler for errors
+function handleError(err, res) {
+  console.error(err);
+  if (res) res.status(500).send('Sorry, something went wrong');
 }
 
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));

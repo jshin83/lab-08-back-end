@@ -1,0 +1,29 @@
+{
+  "name": "lab-08-back-end",
+  "version": "1.0.0",
+  "description": "lab 08 backend, Jen and Luke",
+  "main": "server.js",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^7.0.0",
+    "express": "^4.16.4",
+    "node": "^12.1.0",
+    "pg": "^7.10.0",
+    "superagent": "^5.0.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jshin83/lab-08-back-end.git"
+  },
+  "author": "jen, luke",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jshin83/lab-08-back-end/issues"
+  },
+  "homepage": "https://github.com/jshin83/lab-08-back-end#readme"
+}

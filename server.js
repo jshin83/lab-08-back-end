@@ -129,7 +129,6 @@ function getWeather(request, response) {
   }
 }
 
-
 function getEvents(request, response) {
   if(request.query.data.id) {
     locationId = request.query.data.id;

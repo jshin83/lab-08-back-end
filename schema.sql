@@ -13,16 +13,16 @@ CREATE TABLE location (
 
 CREATE TABLE weather (
   id SERIAL PRIMARY KEY,
-  location_id VARCHAR(255),
   forecast VARCHAR(255),
-  time_string VARCHAR(50)
+  time_string VARCHAR(50), 
+  location_id INTEGER NOT NULL REFERENCES location(id)
 );
 
 CREATE TABLE event (
   id SERIAL PRIMARY KEY,
-  location_id VARCHAR(255),
   link VARCHAR(255),
   event_name VARCHAR(255),
   event_date VARCHAR(25),
-  summary TEXT
+  summary TEXT, 
+  location_id INTEGER NOT NULL REFERENCES location(id)
 );

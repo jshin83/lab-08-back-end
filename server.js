@@ -17,8 +17,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 
 // Database Setup
-//            postgres protocol
-//                            my uname/pw           domain : port/database
 const client = new pg.Client(process.env.DATABASE_URL);
 client.connect();
 
@@ -111,14 +109,7 @@ function getWeather(request, response) {
         // if data in db, use data from db and send result
         // use data from db and send result
         // save id to look at other tables, query db to look at weather
-        let weatherData = data.rows.map( weatherRow => {
-          let tempWeather = {};
-          tempWeather.summary = weatherRow.forecast;
-          tempWeather.time = weatherRow.time_string;
-          let newWeather = new Weather(tempWeather);
-          return newWeather;
-        });
-        response.send(weatherData);
+        response.send(data.rows);
       });
   } else {
     const url = `https://api.darksky.net/forecast/${process.env.DARKSKY_API_KEY}/${request.query.data.latitude},${request.query.data.longitude}`;
@@ -146,23 +137,7 @@ function getEvents(request, response) {
     let values = [ locationId ];
     return client.query(sqlStatement, values)
       .then( data => {
-        let eventData = data.rows.map( eventRow => {
-          console.log(eventRow);
-          /*
-  this.link = event.url;
-  this.name = event.name.text;
-  this.even_date = event.start.local;
-  this.summary = event.summary;
-          */
-          let tempEvent = {};
-          tempEvent.url = eventRow.link;
-          tempEvent.name = eventRow.event_name;
-          tempEvent.event_date = eventRow.event_date;
-          tempEvent.summary = eventRow.summary;
-          let newEvent = new Weather(tempEvent);
-          return newEvent;
-        });
-        response.send(eventData);
+        response.send(data.rows);
       });
   } else {
     const url = `https://www.eventbriteapi.com/v3/events/search?location.longitude=${request.query.data.longitude}&location.latitude=${request.query.data.latitude}&expand=venue&token=${process.env.EVENTBRITE_API_KEY}`;
@@ -171,7 +146,7 @@ function getEvents(request, response) {
       .then(result => {
         //put into db if new
         const events = result.body.events.slice(0, 20).map(eventData => {
-          eventData.event.start.local = new Date(eventData.event.start.local).toDateString();
+          eventData.start.local = new Date(eventData.start.local).toDateString();
           let newEvent = new Event(eventData);
           saveToTables('INSERT INTO event ( location_id, link, event_name, event_date, summary ) VALUES ( $1, $2, $3, $4, $5 )', [ locationId, newEvent.link, newEvent.name, newEvent.event_date, newEvent.summary ]);
           return newEvent;
